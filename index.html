@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -44,6 +45,9 @@ body{margin:0;background:var(--cream);color:var(--ink);font-family:var(--f-body)
 .nav button .count{margin-left:auto;font-size:11px;font-weight:600;color:var(--muted);background:var(--line2);border-radius:20px;padding:1px 8px}
 .nav button.active .count{background:#fff;color:var(--accent-d)}
 .side-foot{padding:12px 14px;border-top:1px solid var(--line)}
+.sf-btns{display:flex;gap:8px;margin-bottom:9px}
+.sf-b{flex:1;border:1px solid var(--line);background:#fff;border-radius:8px;padding:7px 8px;font-family:var(--f-display);font-size:12px;font-weight:600;color:var(--ink);cursor:pointer}
+.sf-b:hover{background:var(--line2)}
 .side-foot .mode{font-size:11px;color:var(--faint);display:flex;align-items:center;gap:6px}
 .side-foot .mode .dot{width:7px;height:7px;border-radius:50%;background:var(--ok)}
 
@@ -157,6 +161,11 @@ ol.steps code{font-family:ui-monospace,monospace;font-size:12.5px;background:var
       <button data-view="como"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg> Como usar</button>
     </nav>
     <div class="side-foot">
+      <div class="sf-btns">
+        <button class="sf-b" id="btnExport">Exportar</button>
+        <button class="sf-b" id="btnImport">Importar</button>
+        <input type="file" id="impFile" accept="application/json" hidden>
+      </div>
       <div class="mode"><span class="dot"></span> Salvo neste navegador</div>
     </div>
   </aside>
@@ -404,6 +413,17 @@ ol.steps code{font-family:ui-monospace,monospace;font-size:12.5px;background:var
 
   // events
   ['input','keyup'].forEach(ev=>{el.nome.addEventListener(ev,buildText);el.desc.addEventListener(ev,buildText);el.corpo.addEventListener(ev,buildText);el.tags.addEventListener(ev,buildText);});
+  // exportar / importar biblioteca (sincronização manual entre aparelhos)
+  const btnExport=$('#btnExport'), btnImport=$('#btnImport'), impFile=$('#impFile');
+  if(btnExport)btnExport.onclick=()=>{const a=load();const blob=new Blob([JSON.stringify(a,null,2)],{type:'application/json'});
+    const u=URL.createObjectURL(blob);const el=document.createElement('a');el.href=u;el.download='vuca-skills-'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(el);el.click();el.remove();setTimeout(()=>URL.revokeObjectURL(u),2000);};
+  if(btnImport)btnImport.onclick=()=>impFile.click();
+  if(impFile)impFile.onchange=()=>{const f=impFile.files[0];if(!f)return;const rd=new FileReader();
+    rd.onload=()=>{try{const inc=JSON.parse(rd.result);if(!Array.isArray(inc))throw 0;
+      const a=load();const byId={};a.forEach(s=>byId[s.id]=s);inc.forEach(s=>{if(s&&s.id)byId[s.id]=s;else{s.id=Date.now()+''+Math.random().toString(36).slice(2,6);byId[s.id]=s;}});
+      save(Object.values(byId));libQuery='';if(libFilter){libFilter.value='';}renderLib();go('minhas');flashGlobal('Biblioteca importada');
+    }catch(e){flashGlobal('Arquivo inválido');}impFile.value='';};rd.readAsText(f);};
+
   $('#btnCopy').onclick=copyOut;
   $('#btnSave').onclick=doSave;
   $('#btnClear').onclick=doClear;
